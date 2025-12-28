@@ -46,6 +46,7 @@ Servo servo;
 
 #define DEBUG            true
 #define LED_PIN          4
+#define LED_EXTERNAL_PIN 3
 // MOTORE SINISTRO
 #define MOTOR_1_PIN_1    13
 #define MOTOR_1_PIN_2    12
@@ -58,6 +59,7 @@ Servo servo;
 #define PWM_RES          10        // 0..1023
 //float kLeft  = 1.00;
 int basePWM  = 800;               // 0..1023
+bool external_led = false;
 
 // === CONFIGURAZIONE SERVO ===
 #define SERVO_PIN 14
@@ -66,10 +68,8 @@ int basePWM  = 800;               // 0..1023
 #define SERVO_MIN_US  900    // ≈ 45°
 #define SERVO_MAX_US  2100   // ≈ 135°
 #define SERVO_FREQ 50       // Hz
-#define STEP_DELAY 10       // ms tra uno step e l'altro
+#define STEP_DELAY 3       // ms tra uno step e l'altro
 int currentPos = 90;
-unsigned long lastMove = 0;
-const int moveInterval = 15; // ms
 
 static const char* _STREAM_CONTENT_TYPE = "multipart/x-mixed-replace;boundary=" PART_BOUNDARY;
 static const char* _STREAM_BOUNDARY = "\r\n--" PART_BOUNDARY "\r\n";
@@ -184,7 +184,7 @@ static esp_err_t cmd_handler(httpd_req_t *req){
   
   // Stampa a scopo di debug per verificare i valori ricevuti
   if(DEBUG){Serial.printf("Comando: %s, basePWM: %d\n", variable, basePWM);}
-  
+
   if(!strcmp(variable, "forward")) {
     // ... (Logica per Forward)
     if(DEBUG){Serial.println("Forward");}
@@ -235,6 +235,10 @@ static esp_err_t cmd_handler(httpd_req_t *req){
     digitalWrite(MOTOR_1_PIN_2, 0);
     ledcWrite(PWM_LEFT_CH,  0);
   }
+  else if(!strcmp(variable, "led")) {   //gestione led esterno
+    external_led = !external_led;
+    digitalWrite(LED_EXTERNAL_PIN, external_led);
+  }
   else {
     res = -1;
   }
@@ -247,7 +251,6 @@ static esp_err_t cmd_handler(httpd_req_t *req){
   return httpd_resp_send(req, NULL, 0);
 }
 
-//STEP_DELAY=20
 void moveServo(int targetPos, int stepDelayMs) {
   if(stepDelayMs<1){
     currentPos=targetPos;
@@ -267,17 +270,6 @@ void moveServo(int targetPos, int stepDelayMs) {
     }
   }
   currentPos=targetPos;
-}
-
-void updateServo(int targetPos) {
-  if(DEBUG){Serial.print("updateServo - currentPos: ");Serial.println(currentPos);}
-  if (currentPos == targetPos) return;
-
-  if (millis() - lastMove >= moveInterval) {
-    lastMove = millis();
-    currentPos += (currentPos < targetPos) ? 1 : -1;
-    servo.write(currentPos);
-  }
 }
 
 void startCameraServer(){
@@ -316,6 +308,9 @@ void startCameraServer(){
 void setup() {
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
   
+  pinMode(LED_EXTERNAL_PIN, OUTPUT);
+  digitalWrite(LED_EXTERNAL_PIN, external_led);
+
   pinMode(MOTOR_1_PIN_1, OUTPUT);
   pinMode(MOTOR_1_PIN_2, OUTPUT);
   digitalWrite(MOTOR_1_PIN_1, 0);
