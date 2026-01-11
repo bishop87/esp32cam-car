@@ -58,7 +58,8 @@ Servo servo;
 #define PWM_FREQ         5000     // 15 kHz
 #define PWM_RES          10        // 0..1023
 //float kLeft  = 1.00;
-int basePWM  = 800;               // 0..1023
+int basePWM  = 900;               // 0..1023
+int angleComp= 5;
 bool external_led = false;
 
 // === CONFIGURAZIONE SERVO ===
@@ -80,7 +81,7 @@ httpd_handle_t stream_httpd = NULL;
 
 
 static esp_err_t index_handler(httpd_req_t *req){
-  httpd_resp_set_type(req, "text/html");
+  httpd_resp_set_type(req, "text/html; charset=utf-8;");
   return httpd_resp_send(req, (const char *)INDEX_HTML, strlen(INDEX_HTML));
 }
 
@@ -148,7 +149,7 @@ static esp_err_t cmd_handler(httpd_req_t *req){
   size_t buf_len;
   char variable[32] = {0,};
   char bpwm_str[16] = {0,}; // Buffer per bpwm
-
+  char angle_str[16] = {0,};
   
   buf_len = httpd_req_get_url_query_len(req) + 1;
   // Usa il buffer locale, assicurandoti che la dimensione richiesta non superi la dimensione del buffer
@@ -162,9 +163,13 @@ static esp_err_t cmd_handler(httpd_req_t *req){
         httpd_resp_send_404(req);
         return ESP_FAIL;
       }
-      // Estrae il valore di 'bpwm' (coefficiente per il motore destro)
+      // Estrae il valore di 'bpwm': velocità
       if (httpd_query_key_value(buf, "bpwm", bpwm_str, sizeof(bpwm_str)) == ESP_OK) {
-         basePWM = atof(bpwm_str); 
+         basePWM = atoi(bpwm_str); 
+      }
+      // Estrae il valore di 'angle': angolo di compensaione sterzo
+      if (httpd_query_key_value(buf, "angle", angle_str, sizeof(angle_str)) == ESP_OK) {
+         angleComp = atoi(angle_str); 
       }
     } else {
       httpd_resp_send_404(req);
@@ -183,14 +188,14 @@ static esp_err_t cmd_handler(httpd_req_t *req){
   //int pwmLeft  = constrain(int(basePWM * kLeft),  0, 1023);
   
   // Stampa a scopo di debug per verificare i valori ricevuti
-  if(DEBUG){Serial.printf("Comando: %s, basePWM: %d\n", variable, basePWM);}
+  if(DEBUG){Serial.printf("Comando: %s, basePWM: %d, angle: %d\n", variable, basePWM, angleComp);}
 
   if(!strcmp(variable, "forward")) {
     // ... (Logica per Forward)
     if(DEBUG){Serial.println("Forward");}
     //servo.write(90);
     //updateServo(90);
-    moveServo(90, STEP_DELAY);
+    moveServo(90 - angleComp, STEP_DELAY);
     digitalWrite(MOTOR_1_PIN_1, 1);
     digitalWrite(MOTOR_1_PIN_2, 0);
     ledcWrite(PWM_LEFT_CH,  basePWM);  
@@ -220,7 +225,7 @@ static esp_err_t cmd_handler(httpd_req_t *req){
     if(DEBUG){Serial.println("Backward");}
     //servo.write(90);
     //updateServo(90);
-    moveServo(90, STEP_DELAY);
+    moveServo(90 - angleComp, STEP_DELAY);
     digitalWrite(MOTOR_1_PIN_1, 0);
     digitalWrite(MOTOR_1_PIN_2, 1);
     ledcWrite(PWM_LEFT_CH,  basePWM);   
@@ -230,7 +235,7 @@ static esp_err_t cmd_handler(httpd_req_t *req){
     if(DEBUG){Serial.println("Stop");}
     //servo.write(90);
     //updateServo(90);
-    moveServo(90, 0);
+    moveServo(90 - angleComp, 0);
     digitalWrite(MOTOR_1_PIN_1, 0);
     digitalWrite(MOTOR_1_PIN_2, 0);
     ledcWrite(PWM_LEFT_CH,  0);
@@ -323,7 +328,7 @@ void setup() {
   // Configura il servo
   servo.setPeriodHertz(SERVO_FREQ);
   servo.attach(SERVO_PIN, SERVO_MIN_US, SERVO_MAX_US);
-  servo.write(90); // Porta subito il servo a 90°
+  servo.write(90 - angleComp); // Porta subito il servo a 90°
 
   ledcSetup(PWM_LEFT_CH,  PWM_FREQ, PWM_RES);
 

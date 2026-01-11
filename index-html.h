@@ -1,6 +1,7 @@
 static const char PROGMEM INDEX_HTML[] = R"rawliteral(
 <html>
   <head>
+    <meta charset="UTF-8">
     <!--<title>ESP32-CAM Robot</title>-->
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
@@ -35,16 +36,30 @@ static const char PROGMEM INDEX_HTML[] = R"rawliteral(
   <body>
     <h1>ESP32-CAM Robot</h1>
     <img src="" id="photo" >
-    <table>
-      <tr><td align="center"><label for="bpwm">PWM</label><br><input type="number" id="bpwm" name="bpwm" value="800" min="0" max="1023"></td><td align="center"><button class="button" onmousedown="toggleCheckbox('forward');" ontouchstart="toggleCheckbox('forward');" onmouseup="toggleCheckbox('stop');" ontouchend="toggleCheckbox('stop');">AVANTI</button></td><td align="center"><button class="button" onclick="toggleCheckbox('led');">LED</button></td></tr>
-      <tr><td align="center"><button class="button" onmousedown="toggleCheckbox('left');" ontouchstart="toggleCheckbox('left');" onmouseup="toggleCheckbox('stop');" ontouchend="toggleCheckbox('stop');">SINISTRA</button></td><td align="center"><button class="button" onmousedown="toggleCheckbox('stop');" ontouchstart="toggleCheckbox('stop');">STOP</button></td><td align="center"><button class="button" onmousedown="toggleCheckbox('right');" ontouchstart="toggleCheckbox('right');" onmouseup="toggleCheckbox('stop');" ontouchend="toggleCheckbox('stop');">DESTRA</button></td></tr>
-      <tr><td colspan="3" align="center"><button class="button" onmousedown="toggleCheckbox('backward');" ontouchstart="toggleCheckbox('backward');" onmouseup="toggleCheckbox('stop');" ontouchend="toggleCheckbox('stop');">INDIETRO</button></td></tr>
-    </table>
+    <table><tbody>
+      <tr>
+        <td align="center" colspan="3"><label for="bpwm">Speed</label><input id="bpwm" type="range" min="800" max="1023" value="900" style="width:100%;"></td>
+      </tr>
+      <tr>
+        <td align="center"><label for="angle" style="font-size: x-large;">⦡</label><input type="number" id="angle" name="angle" value="5" min="0" max="180"></td>
+        <td align="center"><button class="button" onmousedown="toggleCheckbox('forward');" ontouchstart="toggleCheckbox('forward');" onmouseup="toggleCheckbox('stop');" ontouchend="toggleCheckbox('stop');">▲</button></td>
+        <td align="center"><button class="button" onclick="toggleCheckbox('led');">☼</button></td></tr>
+      <tr>
+        <td align="center"><button class="button" onmousedown="toggleCheckbox('left');" ontouchstart="toggleCheckbox('left');" onmouseup="toggleCheckbox('stop');" ontouchend="toggleCheckbox('stop');">◄</button></td>
+        <td align="center"><button class="button" onmousedown="toggleCheckbox('stop');" ontouchstart="toggleCheckbox('stop');">◼</button></td>
+        <td align="center"><button class="button" onmousedown="toggleCheckbox('right');" ontouchstart="toggleCheckbox('right');" onmouseup="toggleCheckbox('stop');" ontouchend="toggleCheckbox('stop');">►</button></td>
+      </tr>
+      <tr>
+        <td></td>
+        <td align="center"><button class="button" onmousedown="toggleCheckbox('backward');" ontouchstart="toggleCheckbox('backward');" onmouseup="toggleCheckbox('stop');" ontouchend="toggleCheckbox('stop');">▼</button></td>
+      </tr>
+    </tbody></table>
    <script>
    function toggleCheckbox(x) {
      // Recupera i valori attuali dei campi di input numerici
      var bpwm_value = document.getElementById("bpwm").value;
-     var url = "/action?go=" + x + "&bpwm=" + bpwm_value;
+     var angle_value = document.getElementById("angle").value;
+     var url = "/action?go=" + x + "&bpwm=" + bpwm_value + "&angle=" + angle_value;
 
      var xhr = new XMLHttpRequest();
      xhr.open("GET", url, true);
